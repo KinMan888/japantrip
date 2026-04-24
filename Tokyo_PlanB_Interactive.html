@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tokyo Plan B · 海鮮遠征 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&family=Zen+Kaku+Gothic+New:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --ink: #0a0e14;
+  --paper: #f5f1e8;
+  --paper-dark: #ebe4d4;
+  --sumi: #1a1d24;
+  --vermillion: #c73e1d;
+  --vermillion-dark: #a02e14;
+  --indigo: #1e3a5f;
+  --indigo-light: #2c4d7c;
+  --seafoam: #5a8a7a;
+  --gold: #b89968;
+  --rice: #ede6d3;
+  --shadow: rgba(10, 14, 20, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Grain texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ========= HEADER ========= */
+.hero {
+  position: relative;
+  padding: 3rem 2rem 2rem;
+  background: var(--paper);
+  border-bottom: 1px solid var(--ink);
+  overflow: hidden;
+}
+
+.hero-grid {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+}
+
+.hero-title {
+  font-family: 'Shippori Mincho', serif;
+  font-weight: 800;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.hero-title .jp {
+  display: block;
+  color: var(--vermillion);
+  font-size: 0.55em;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+.hero-title .accent {
+  font-style: italic;
+  color: var(--indigo);
+}
+
+.hero-meta {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  line-height: 1.8;
+  color: var(--sumi);
+}
+
+.hero-meta .label {
+  color: var(--vermillion);
+  font-weight: 500;
+}
+
+.hero-tag {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  margin-top: 1rem;
+  text-transform: uppercase;
+}
+
+.hero-stats {
+  max-width: 1400px;
+  margin: 2rem auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+}
+
+.stat {
+  padding: 1rem 1.5rem;
+  border-right: 1px solid var(--ink);
+}
+.stat:last-child { border-right: none; }
+
+.stat-num {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--vermillion);
+  line-height: 1;
+}
+
+.stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 0.3rem;
+  color: var(--sumi);
+}
+
+/* ========= DAY TABS ========= */
+.day-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--ink);
+  border-bottom: 2px solid var(--vermillion);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.day-nav::-webkit-scrollbar { display: none; }
+
+.day-nav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0;
+  min-width: min-content;
+}
+
+.day-btn {
+  flex: 1;
+  min-width: 140px;
+  padding: 1rem 1.2rem;
+  background: transparent;
+  color: var(--paper);
+  border: none;
+  border-right: 1px solid rgba(245, 241, 232, 0.1);
+  cursor: pointer;
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  text-align: left;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.day-btn:hover { background: rgba(199, 62, 29, 0.2); }
+
+.day-btn.active {
+  background: var(--vermillion);
+  color: var(--paper);
+}
+
+.day-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gold);
+}
+
+.day-btn-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+  display: block;
+}
+
+.day-btn-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: 0.15rem;
+  display: block;
+}
+
+.day-btn-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-top: 0.1rem;
+  display: block;
+}
+
+/* ========= MAIN LAYOUT ========= */
+.content {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 0;
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  min-height: calc(100vh - 200px);
+}
+
+/* ========= DAY PANEL ========= */
+.day-panel {
+  padding: 2.5rem 2rem;
+  border-right: 1px solid var(--ink);
+  background: var(--paper);
+  overflow-y: auto;
+  max-height: calc(100vh - 60px);
+  position: sticky;
+  top: 60px;
+}
+
+.day-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ink);
+}
+
+.day-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--vermillion);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.day-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-top: 0.5rem;
+  color: var(--ink);
+}
+
+.day-subtitle {
+  font-size: 0.9rem;
+  color: var(--sumi);
+  margin-top: 0.8rem;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.day-badge {
+  display: inline-block;
+  padding: 0.3rem 0.8rem;
+  background: var(--indigo);
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  margin-top: 0.8rem;
+  border-radius: 2px;
+}
+
+.day-badge.warn { background: var(--vermillion); }
+
+/* Timeline */
+.timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 1px;
+  background: var(--ink);
+}
+
+.event {
+  position: relative;
+  margin-bottom: 2rem;
+  padding-left: 1rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.event:hover { padding-left: 1.5rem; }
+
+.event::before {
+  content: '';
+  position: absolute;
+  left: -1.7rem;
+  top: 0.4rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  transition: all 0.3s;
+}
+
+.event.highlight::before {
+  background: var(--vermillion);
+  border-color: var(--vermillion);
+  transform: scale(1.3);
+}
+
+.event.highlight {
+  padding-left: 1.5rem;
+}
+
+.event-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--vermillion);
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
+.event-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.event-desc {
+  font-size: 0.85rem;
+  color: var(--sumi);
+  margin-top: 0.4rem;
+  opacity: 0.85;
+}
+
+.event.highlight .event-title { color: var(--vermillion); }
+
+.event-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.event-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--rice);
+  border: 1px solid var(--ink);
+  letter-spacing: 0.05em;
+}
+
+.event-tag.budget { background: var(--gold); color: var(--paper); border-color: var(--gold); }
+.event-tag.warn { background: var(--vermillion); color: var(--paper); border-color: var(--vermillion); }
+
+/* ========= MAP ========= */
+.map-section {
+  position: relative;
+  background: var(--ink);
+  min-height: calc(100vh - 60px);
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 60px);
+  position: sticky;
+  top: 60px;
+  background: #c8d8e0;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 500;
+  background: var(--paper);
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--ink);
+  max-width: 250px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.map-overlay-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.map-overlay-info {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--sumi);
+  line-height: 1.6;
+}
+
+.map-legend {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 500;
+  background: var(--paper);
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+}
+
+.legend-dot.meal { background: var(--vermillion); }
+.legend-dot.stop { background: var(--indigo); }
+.legend-dot.hotel { background: var(--gold); }
+.legend-dot.scenic { background: var(--seafoam); }
+
+/* Custom marker styles */
+.custom-marker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--paper);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 2px 2px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.custom-marker:hover { transform: scale(1.2); }
+.custom-marker.meal { background: var(--vermillion); }
+.custom-marker.stop { background: var(--indigo); }
+.custom-marker.hotel { background: var(--gold); }
+.custom-marker.scenic { background: var(--seafoam); }
+
+.leaflet-popup-content-wrapper {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.leaflet-popup-content {
+  margin: 1rem 1.2rem;
+  font-family: 'Zen Kaku Gothic New', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.leaflet-popup-tip { background: var(--paper); border: 1px solid var(--ink); }
+
+.popup-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--vermillion);
+  letter-spacing: 0.1em;
+}
+
+.popup-title {
+  font-family: 'Shippori Mincho', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0.2rem 0 0.4rem;
+  color: var(--ink);
+}
+
+.popup-desc {
+  color: var(--sumi);
+  font-size: 0.78rem;
+}
+
+/* ========= FOOTER ========= */
+.footer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper-dark);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-warn {
+  padding: 0.3rem 0.6rem;
+  background: var(--vermillion);
+  color: var(--paper);
+}
+
+/* ========= RESPONSIVE ========= */
+@media (max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  .day-panel {
+    position: static;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--ink);
+  }
+  .map-section {
+    position: static;
+  }
+  #map {
+    position: static;
+    height: 500px;
+    min-height: 500px;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+  .hero-meta { text-align: left; }
+  .hero-stats { grid-template-columns: repeat(2, 1fr); }
+  .stat:nth-child(2) { border-right: none; }
+  .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--ink); }
+  .day-btn { min-width: 110px; padding: 0.8rem; }
+}
+
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Japanese decorative element */
+.hero-decoration {
+  position: absolute;
+  right: 2rem;
+  bottom: -40px;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 10rem;
+  font-weight: 800;
+  color: var(--vermillion);
+  opacity: 0.06;
+  pointer-events: none;
+  line-height: 1;
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-grid">
+    <div>
+      <h1 class="hero-title">
+        <span class="jp">東京 · 海鮮遠征 · 2026</span>
+        Tokyo <span class="accent">Plan B</span><br>
+        Seafood Expedition
+      </h1>
+      <div class="hero-tag">漁港 → 海岸線 → 鮪魚 → 生蠔 → 爐端燒</div>
+    </div>
+    <div class="hero-meta">
+      <span class="label">EXPEDITION</span> 9 DAYS<br>
+      <span class="label">DEPARTURE</span> 2026.04.29<br>
+      <span class="label">RETURN</span> 2026.05.07<br>
+      <span class="label">BASE</span> Daiwa Roynet Osaki<br>
+      <span class="label">PARTY</span> 2 (男性)<br>
+      <span class="label">VEHICLE</span> Times Car × 2 days
+    </div>
+  </div>
+  <div class="hero-decoration">海</div>
+</header>
+
+<!-- STATS -->
+<div class="hero-stats">
+  <div class="stat">
+    <div class="stat-num">13</div>
+    <div class="stat-label">Must-Eat Restaurants</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">400</div>
+    <div class="stat-label">KM Driving Route</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">8</div>
+    <div class="stat-label">Days of Seafood</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">¥180K</div>
+    <div class="stat-label">Budget / Person</div>
+  </div>
+</div>
+
+<!-- DAY NAV -->
+<nav class="day-nav">
+  <div class="day-nav-inner" id="dayNav"></div>
+</nav>
+
+<!-- CONTENT -->
+<div class="content">
+  <!-- LEFT: Day Panel -->
+  <div class="day-panel" id="dayPanel"></div>
+
+  <!-- RIGHT: Map -->
+  <div class="map-section">
+    <div id="map"></div>
+    <div class="map-overlay" id="mapOverlay">
+      <div class="map-overlay-title">選擇日期查看地點</div>
+      <div class="map-overlay-info">每天的餐廳、景點、移動路線都會在地圖上標示</div>
+    </div>
+    <div class="map-legend">
+      <div class="legend-item"><span class="legend-dot meal"></span>用餐</div>
+      <div class="legend-item"><span class="legend-dot stop"></span>景點/停靠</div>
+      <div class="legend-item"><span class="legend-dot hotel"></span>住宿</div>
+      <div class="legend-item"><span class="legend-dot scenic"></span>自然景觀</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div>
+    <span class="footer-warn">⚠ GOLDEN WEEK</span>
+    5/3-5/5 避開高速公路塞車高峰 · 下行早 7-9 點 / 上行日中-夜
+  </div>
+  <div>NEXCO 東日本 2026 GW 預測 · 中央道 45km · 關越道 40km</div>
+</footer>
+
+<script>
+// ============================================================
+// DATA: All 9 days with locations, events, routes
+// ============================================================
+const itinerary = [
+  {
+    id: 1,
+    num: 'Day 01',
+    label: '抵達',
+    date: '04.29 (三)',
+    tag: '昭和之日',
+    title: '抵達日',
+    subtitle: '桃園 → 成田 → 大崎，輕鬆接風',
+    badge: null,
+    center: [35.665, 139.75],
+    zoom: 10,
+    events: [
+      { time: '11:15', title: '抵達成田 T1', desc: '過海關、搭 Skyliner', type: 'stop', coord: [35.764, 140.386] },
+      { time: '14:00', title: '大崎飯店', desc: 'Daiwa Roynet Osaki 寄放行李', type: 'hotel', coord: [35.619, 139.728] },
+      { time: '18:00', title: '酒場つむぎ堂', desc: '食べログ 3.90 · 西武新宿輕鬆居酒屋接風', type: 'meal', highlight: true, coord: [35.6975, 139.698] }
+    ]
+  },
+  {
+    id: 2,
+    num: 'Day 02',
+    label: '澀谷+創投',
+    date: '04.30 (四)',
+    tag: '剪髮日',
+    title: '澀谷剪髮 + 創投陪同',
+    subtitle: '主管 12:00 剪髮，19:00 創投晚餐',
+    badge: '陪同',
+    center: [35.660, 139.700],
+    zoom: 13,
+    events: [
+      { time: '11:00', title: '大崎 → 澀谷', desc: '山手線 8 分鐘', type: 'stop', coord: [35.658, 139.7014] },
+      { time: '12:00', title: '玉手箱 渋谷', desc: '海鮮+浜焼吃到飽 ¥4,980起', type: 'meal', highlight: true, coord: [35.661, 139.698], budget: '¥4,980+' },
+      { time: '12:30', title: '主管剪髮', desc: '你可逛 SCRAMBLE SQUARE / 109', type: 'stop', coord: [35.659, 139.7016] },
+      { time: '19:00', title: '創投晚餐', desc: '陪同，地點待主管確認', type: 'meal', highlight: true, coord: [35.665, 139.73], warn: true }
+    ]
+  },
+  {
+    id: 3,
+    num: 'Day 03',
+    label: '三崎港',
+    date: '05.01 (五)',
+    tag: '租車 Day 1',
+    title: '三崎港鮪魚日',
+    subtitle: '神奈川三浦半島 · 鮪魚一級產地 · 單程 1.5h',
+    badge: '🚗 租車',
+    center: [35.35, 139.75],
+    zoom: 10,
+    drive: [
+      [35.619, 139.728],  // 大崎
+      [35.45, 139.7],     // 橫濱
+      [35.145, 139.605],  // 城ヶ島
+      [35.139, 139.617],  // 三崎港
+      [35.619, 139.728]   // 回大崎
+    ],
+    events: [
+      { time: '08:30', title: 'Times 大崎取車', desc: '確認駕照日文譯本', type: 'stop', coord: [35.619, 139.728] },
+      { time: '10:30', title: '城ヶ島', desc: '三浦半島最南端、海蝕地形+燈塔', type: 'scenic', coord: [35.135, 139.623] },
+      { time: '12:00', title: 'まぐろ食堂 七兵衛丸', desc: '90 年魚屋直營 · 海鮮丼 ¥1,900', type: 'meal', highlight: true, coord: [35.143, 139.617], budget: '¥1,500-2,500', star: true },
+      { time: '13:30', title: 'うらりマルシェ', desc: '漁港市集 · 可買冷凍鮪魚', type: 'stop', coord: [35.144, 139.616] },
+      { time: '15:30', title: '油壺荒井浜海岸', desc: '自由發揮，繞回橫須賀看海', type: 'scenic', coord: [35.163, 139.614] },
+      { time: '19:00', title: 'にっぽん市 池袋', desc: '蛤蜊抓到飽 ¥2,970 · 必預約', type: 'meal', highlight: true, coord: [35.7295, 139.710], budget: '¥2,970', warn: true }
+    ]
+  },
+  {
+    id: 4,
+    num: 'Day 04',
+    label: '上野+野味',
+    date: '05.02 (六)',
+    tag: '',
+    title: '上野 + 法式野味',
+    subtitle: '釣烏賊 → 食べログ 3.84 GOURMANDS',
+    badge: null,
+    center: [35.707, 139.77],
+    zoom: 13,
+    events: [
+      { time: '11:00', title: '大崎 → 上野', desc: '山手線 30 分', type: 'stop', coord: [35.714, 139.777] },
+      { time: '13:30', title: '上野イカセンター', desc: '室內釣烏賊 · 南房總直送 · FUNDES 上野 7F', type: 'meal', highlight: true, coord: [35.7135, 139.7775], budget: '¥5-7K', star: true },
+      { time: '15:30', title: '清澄白河漫步', desc: '順路：Koffee Mameya Kakeru', type: 'stop', coord: [35.6820, 139.798] },
+      { time: '18:30', title: 'GOURMANDS 御茶ノ水', desc: '獵人主廚 · 極ジビエコース ¥9,900 (11 道)', type: 'meal', highlight: true, coord: [35.6977, 139.7673], budget: '¥9,900', star: true }
+    ]
+  },
+  {
+    id: 5,
+    num: 'Day 05',
+    label: '房總環線',
+    date: '05.03 (日)',
+    tag: '租車 Day 2 · GW',
+    title: '房總半島海鮮環線',
+    subtitle: '最爽日 · 鋸山地獄覗 + 保田漁協 · 250km',
+    badge: '🚗 早起 7:00',
+    center: [35.15, 139.92],
+    zoom: 9,
+    drive: [
+      [35.619, 139.728],  // 大崎
+      [35.464, 139.876],  // 海螢火 PA
+      [35.161, 139.827],  // 鋸山
+      [35.128, 139.826],  // 保田漁協
+      [34.997, 139.867],  // 館山
+      [35.152, 140.322],  // 勝浦
+      [35.619, 139.728]   // 回大崎（京葉道）
+    ],
+    events: [
+      { time: '07:00', title: '早起取車', desc: '避開 9 點後黃金週塞車', type: 'stop', coord: [35.619, 139.728] },
+      { time: '08:00', title: '海螢火 PA', desc: '東京灣海底隧道中間 · 360 度海景', type: 'scenic', coord: [35.464, 139.876], star: true },
+      { time: '09:00', title: '鋸山纜車', desc: '地獄覗絕景 · 日本寺 · 海蝕石切場', type: 'scenic', coord: [35.161, 139.827], star: true },
+      { time: '12:00', title: '保田漁協 ばんや 本館', desc: '漁協直營 50 年 · 朝獲れ寿司 ¥850 · 鮪魚カツ · 章魚蒜片', type: 'meal', highlight: true, coord: [35.128, 139.826], budget: '¥2-3K', star: true },
+      { time: '13:30', title: 'ばんやの湯', desc: '高濃度炭酸泉泡湯', type: 'stop', coord: [35.128, 139.826] },
+      { time: '14:30', title: '館山', desc: '千葉最南端，海岸線超美', type: 'scenic', coord: [34.997, 139.867] },
+      { time: '16:00', title: '勝浦外房海岸', desc: '北上回程 · 走京葉道路', type: 'scenic', coord: [35.152, 140.322] },
+      { time: '20:00', title: 'ろばた翔 / なみ小屋', desc: '新宿爐端燒輕食收尾', type: 'meal', highlight: true, coord: [35.691, 139.700], budget: '¥2-6K' }
+    ]
+  },
+  {
+    id: 6,
+    num: 'Day 06',
+    label: '燒肉百名店',
+    date: '05.04 (一)',
+    tag: '綠之日',
+    title: '燒肉雙響炮',
+    subtitle: '2025 食べログ百名店 × 2',
+    badge: '🔥 頂級和牛',
+    center: [35.665, 139.738],
+    zoom: 13,
+    events: [
+      { time: '11:00', title: '大崎 → 銀座', desc: '地鐵 20 分', type: 'stop', coord: [35.619, 139.728] },
+      { time: '12:00', title: '焼肉うしごろ 銀座並木通り', desc: '2025 百名店 · A5 處女牛 · 午餐 ¥3,400-6,000', type: 'meal', highlight: true, coord: [35.670, 139.764], budget: '¥3.4-6K', star: true },
+      { time: '14:30', title: 'Bacha Coffee 銀座本店', desc: '咖啡時間', type: 'stop', coord: [35.670, 139.764] },
+      { time: '18:30', title: '焼肉しみず', desc: '2025 百名店 · 預約困難 · 芝浦市場直送 · 極厚牛舌', type: 'meal', highlight: true, coord: [35.631, 139.724], budget: '¥10-15K', star: true, warn: true },
+      { time: '21:00', title: '走回大崎', desc: 'しみず 離飯店很近', type: 'hotel', coord: [35.619, 139.728] }
+    ]
+  },
+  {
+    id: 7,
+    num: 'Day 07',
+    label: '橫濱',
+    date: '05.05 (二)',
+    tag: '兒童節',
+    title: '橫濱中華街',
+    subtitle: '蒸氣鍋海鮮自助 · 港未來纜車',
+    badge: null,
+    center: [35.445, 139.645],
+    zoom: 12,
+    events: [
+      { time: '10:30', title: '大崎 → 元町・中華街', desc: '湘南新宿線+港未來線約 50 分', type: 'stop', coord: [35.619, 139.728] },
+      { time: '11:30', title: '山下公園', desc: '橫濱港散策', type: 'scenic', coord: [35.445, 139.650] },
+      { time: '13:00', title: '桂宮 4F 蒸氣鍋海鮮', desc: '海鮮吃到飽 · 豐洲市場直送', type: 'meal', highlight: true, coord: [35.443, 139.648], budget: '¥6-8K' },
+      { time: '15:00', title: '紅磚倉庫 + YOKOHAMA AIR CABIN', desc: '橫濱觀光', type: 'scenic', coord: [35.453, 139.638] },
+      { time: '19:30', title: '燗アガリはなれ 新宿', desc: '爐端燒 ¥5-6K 收尾', type: 'meal', highlight: true, coord: [35.693, 139.6945], budget: '¥5-6K' }
+    ]
+  },
+  {
+    id: 8,
+    num: 'Day 08',
+    label: '海鮮收尾',
+    date: '05.06 (三)',
+    tag: '平日',
+    title: '生蠔 + 福井海鮮',
+    subtitle: 'Ermitage 生蠔吃到飽 + サカバミハマ',
+    badge: null,
+    center: [35.685, 139.70],
+    zoom: 13,
+    events: [
+      { time: '11:00', title: '大崎 → 代代木', desc: '', type: 'stop', coord: [35.619, 139.728] },
+      { time: '12:00', title: 'Ermitage 代代木', desc: '生蠔吃到飽 ¥4,320 / 6 種烹調 ¥6,380 · 必預約', type: 'meal', highlight: true, coord: [35.680, 139.698], budget: '¥4.3-6.4K', star: true, warn: true },
+      { time: '14:30', title: '代代木公園 + Koffee Mameya 原宿', desc: '咖啡時間', type: 'stop', coord: [35.670, 139.702] },
+      { time: '18:30', title: 'サカバミハマ 新宿', desc: '福井海鮮+越前蕎麥麵 · 鰤の藁焼 · 刺し盛り', type: 'meal', highlight: true, coord: [35.691, 139.695], budget: '¥6-8K' }
+    ]
+  },
+  {
+    id: 9,
+    num: 'Day 09',
+    label: '回程',
+    date: '05.07 (四)',
+    tag: '返台',
+    title: '回程台北',
+    subtitle: '12:30 起飛 · 最晚 8:00 出門',
+    badge: '早起',
+    center: [35.72, 140.1],
+    zoom: 9,
+    events: [
+      { time: '07:30', title: '大崎 → 成田 T1', desc: 'Skyliner 約 1.5 小時', type: 'stop', coord: [35.619, 139.728] },
+      { time: '09:30', title: '抵達成田 T1', desc: 'Check-in · 行李托運', type: 'stop', coord: [35.764, 140.386] },
+      { time: '12:30', title: '航班起飛', desc: '→ 桃園 T1 · 15:10 抵達', type: 'stop', coord: [35.764, 140.386] }
+    ]
+  }
+];
+
+// ============================================================
+// RENDER DAY NAV
+// ============================================================
+const dayNav = document.getElementById('dayNav');
+itinerary.forEach((day, idx) => {
+  const btn = document.createElement('button');
+  btn.className = 'day-btn' + (idx === 0 ? ' active' : '');
+  btn.dataset.day = day.id;
+  btn.innerHTML = `
+    <span class="day-btn-num">${day.num}</span>
+    <span class="day-btn-label">${day.label}</span>
+    <span class="day-btn-date">${day.date}</span>
+  `;
+  btn.addEventListener('click', () => selectDay(day.id));
+  dayNav.appendChild(btn);
+});
+
+// ============================================================
+// LEAFLET MAP SETUP
+// ============================================================
+const map = L.map('map', {
+  zoomControl: true,
+  scrollWheelZoom: true,
+  minZoom: 8,
+  maxZoom: 17
+}).setView([35.665, 139.75], 10);
+
+// Stamen-style monochrome tiles via CartoDB (free, no key)
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CartoDB',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+  attribution: '',
+  subdomains: 'abcd',
+  maxZoom: 19,
+  pane: 'shadowPane'
+}).addTo(map);
+
+let currentMarkers = [];
+let currentRoute = null;
+
+function clearMap() {
+  currentMarkers.forEach(m => map.removeLayer(m));
+  currentMarkers = [];
+  if (currentRoute) {
+    map.removeLayer(currentRoute);
+    currentRoute = null;
+  }
+}
+
+function createCustomIcon(type, label, star = false) {
+  const starMark = star ? '★' : label;
+  return L.divIcon({
+    className: '',
+    html: `<div class="custom-marker ${type}">${starMark}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+}
+
+// ============================================================
+// RENDER DAY
+// ============================================================
+function selectDay(dayId) {
+  const day = itinerary.find(d => d.id === dayId);
+  if (!day) return;
+
+  // Update nav active state
+  document.querySelectorAll('.day-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.day) === dayId);
+  });
+
+  // Render left panel
+  renderPanel(day);
+
+  // Render map
+  renderMap(day);
+}
+
+function renderPanel(day) {
+  const panel = document.getElementById('dayPanel');
+  let html = `
+    <div class="day-header fade-in">
+      <div class="day-meta">${day.num} · ${day.date} · ${day.tag}</div>
+      <h2 class="day-title">${day.title}</h2>
+      <div class="day-subtitle">${day.subtitle}</div>
+      ${day.badge ? `<span class="day-badge ${day.badge.includes('早起') || day.badge.includes('🚗') ? 'warn' : ''}">${day.badge}</span>` : ''}
+    </div>
+    <div class="timeline">
+  `;
+  day.events.forEach((e, idx) => {
+    const tags = [];
+    if (e.budget) tags.push(`<span class="event-tag budget">${e.budget}</span>`);
+    if (e.warn) tags.push(`<span class="event-tag warn">要預約</span>`);
+    if (e.star) tags.push(`<span class="event-tag">★ 必吃</span>`);
+
+    html += `
+      <div class="event fade-in ${e.highlight ? 'highlight' : ''}" data-idx="${idx}" style="animation-delay:${idx * 0.05}s">
+        <div class="event-time">${e.time}</div>
+        <div class="event-title">${e.title}</div>
+        <div class="event-desc">${e.desc}</div>
+        ${tags.length ? `<div class="event-tags">${tags.join('')}</div>` : ''}
+      </div>
+    `;
+  });
+  html += '</div>';
+  panel.innerHTML = html;
+
+  // Click event to focus map
+  panel.querySelectorAll('.event').forEach((el, idx) => {
+    el.addEventListener('click', () => {
+      const e = day.events[idx];
+      if (e.coord) {
+        map.flyTo(e.coord, 15, { duration: 0.8 });
+      }
+    });
+  });
+}
+
+function renderMap(day) {
+  clearMap();
+
+  // Fly to day center
+  map.flyTo(day.center, day.zoom, { duration: 1 });
+
+  // Add markers
+  day.events.forEach((e, idx) => {
+    if (!e.coord) return;
+    const label = (idx + 1).toString();
+    const marker = L.marker(e.coord, {
+      icon: createCustomIcon(e.type, label, e.star)
+    }).addTo(map);
+
+    let popupHTML = `
+      <div class="popup-time">${e.time} · ${day.num}</div>
+      <div class="popup-title">${e.title}</div>
+      <div class="popup-desc">${e.desc}</div>
+    `;
+    if (e.budget) popupHTML += `<div style="margin-top:0.5rem;font-family:monospace;font-size:0.7rem;color:#b89968">💰 ${e.budget}</div>`;
+    marker.bindPopup(popupHTML);
+    currentMarkers.push(marker);
+  });
+
+  // Draw driving route if exists
+  if (day.drive) {
+    currentRoute = L.polyline(day.drive, {
+      color: '#c73e1d',
+      weight: 3,
+      opacity: 0.6,
+      dashArray: '8, 6'
+    }).addTo(map);
+  }
+
+  // Update overlay
+  const overlay = document.getElementById('mapOverlay');
+  overlay.innerHTML = `
+    <div class="map-overlay-title">${day.title}</div>
+    <div class="map-overlay-info">
+      ${day.events.length} 個地點<br>
+      ${day.drive ? `🚗 駕車路線 · 虛線` : '🚃 大眾運輸'}<br>
+      ${day.tag ? day.tag : ''}
+    </div>
+  `;
+}
+
+// Initial render
+selectDay(1);
+
+// Keyboard nav
+document.addEventListener('keydown', (e) => {
+  const activeBtn = document.querySelector('.day-btn.active');
+  const currentId = parseInt(activeBtn.dataset.day);
+  if (e.key === 'ArrowRight' && currentId < 9) selectDay(currentId + 1);
+  if (e.key === 'ArrowLeft' && currentId > 1) selectDay(currentId - 1);
+});
+</script>
+</body>
+</html>
